@@ -2,7 +2,7 @@
 
 An ESP32-powered LED lamp that changes color based on Ethereum price movements. Green when ETH is up, red when it's down!
 
-**Serial Mode**: This version connects to your laptop via USB. A Python script on your laptop fetches ETH prices and sends them to the ESP32.
+**Serial Mode**: This version connects to your laptop via USB. A script on your laptop (Node.js or Python) fetches ETH prices and sends them to the ESP32.
 
 ## Hardware Requirements
 
@@ -43,7 +43,17 @@ If you're using a common anode RGB LED, connect the common pin to 3.3V instead o
 Install via Library Manager (Sketch > Include Library > Manage Libraries):
 - **ArduinoJson** by Benoit Blanchon (version 7.x)
 
-### 3. Python Requirements
+### 3. Node.js or Python (Choose One)
+
+#### Option A: Node.js (Recommended)
+
+Install [Node.js](https://nodejs.org/) (version 14 or newer), then install required packages:
+
+```bash
+npm install
+```
+
+#### Option B: Python
 
 Install Python 3.7 or newer, then install required packages:
 
@@ -64,21 +74,44 @@ pip install pyserial requests
 5. Click Upload
 6. Note which COM port you used
 
-### Step 2: Run Python Script
+### Step 2: Run the Tracker Script
 
 1. Close Arduino IDE Serial Monitor (if open)
-2. Edit [eth_tracker.py](eth_tracker.py) and update the COM port:
+2. Choose Node.js OR Python:
+
+#### Option A: Node.js
+
+1. Install dependencies (first time only):
+   ```bash
+   npm install
+   ```
+2. Edit [eth_tracker.js](eth_tracker.js) and update the COM port on line 5:
+   ```javascript
+   const SERIAL_PORT = 'COM3';  // Change to match your ESP32's port
+   ```
+3. Run the script:
+   ```bash
+   npm start
+   ```
+   Or:
+   ```bash
+   node eth_tracker.js
+   ```
+
+#### Option B: Python
+
+1. Edit [eth_tracker.py](eth_tracker.py) and update the COM port:
    ```python
    SERIAL_PORT = 'COM3'  # Change to match your ESP32's port
    ```
-3. Run the script:
+2. Run the script:
    ```bash
    python eth_tracker.py
    ```
 
 ## How It Works
 
-1. **Python script on your laptop**:
+1. **Node.js/Python script on your laptop**:
    - Fetches current Ethereum price from CoinGecko API every 60 seconds
    - Stores price history for comparison
    - Compares current price to 5 minutes ago
@@ -110,9 +143,9 @@ Edit [config.h](config.h):
 | `BLUE_PIN` | 27 | GPIO pin for blue LED |
 | `LED_BRIGHTNESS` | 255 | LED brightness (0-255) |
 
-### Python Script Settings
+### Tracker Script Settings
 
-Edit [eth_tracker.py](eth_tracker.py):
+Edit [eth_tracker.js](eth_tracker.js) (Node.js) or [eth_tracker.py](eth_tracker.py) (Python):
 
 | Setting | Default | Description |
 |---------|---------|-------------|
@@ -128,15 +161,21 @@ Edit [eth_tracker.py](eth_tracker.py):
 - Make sure you're using appropriate resistors (220Ω recommended)
 - Check if you have common cathode or common anode RGB LED
 
-### Python script can't connect
+### Script can't connect to ESP32
 - Make sure ESP32 is connected via USB
 - Close Arduino IDE Serial Monitor if it's open (only one program can use the serial port)
 - Check the COM port in Device Manager (Windows) or `ls /dev/tty*` (Mac/Linux)
-- Update `SERIAL_PORT` in [eth_tracker.py](eth_tracker.py) to match your ESP32's port
+- Update `SERIAL_PORT` in [eth_tracker.js](eth_tracker.js) or [eth_tracker.py](eth_tracker.py) to match your ESP32's port
 - Try unplugging and replugging the USB cable
 
-### "Module not found" errors
-Install missing Python packages:
+### "Module not found" or dependency errors
+
+**Node.js:**
+```bash
+npm install
+```
+
+**Python:**
 ```bash
 pip install pyserial requests
 ```
@@ -148,7 +187,7 @@ pip install pyserial requests
 
 ## Example Output
 
-When running [eth_tracker.py](eth_tracker.py), you'll see:
+When running the tracker script ([eth_tracker.js](eth_tracker.js) or [eth_tracker.py](eth_tracker.py)), you'll see:
 
 ```
 === Ethereum MoonLamp Tracker ===
@@ -177,7 +216,16 @@ Uses the free CoinGecko API (no API key required):
 ## Running Automatically
 
 ### Windows
-Create a `.bat` file to run the script:
+
+**Node.js:**
+```batch
+@echo off
+cd C:\miniapps\moonlamp
+npm start
+pause
+```
+
+**Python:**
 ```batch
 @echo off
 cd C:\miniapps\moonlamp
@@ -186,7 +234,15 @@ pause
 ```
 
 ### Mac/Linux
-Create a shell script:
+
+**Node.js:**
+```bash
+#!/bin/bash
+cd ~/miniapps/moonlamp
+npm start
+```
+
+**Python:**
 ```bash
 #!/bin/bash
 cd ~/miniapps/moonlamp
