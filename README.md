@@ -2,15 +2,16 @@
 
 An ESP32-powered LED lamp that changes color based on Ethereum price movements. Green when ETH is up, red when it's down!
 
-**Serial Mode**: This version connects to your laptop via USB. A script on your laptop (Node.js or Python) fetches ETH prices and sends them to the ESP32.
+**WiFi Mode**: This version connects to your WiFi network and runs completely standalone. The ESP32 fetches ETH prices directly from the internet - no computer needed!
 
 ## Hardware Requirements
 
-- ESP32 development board
+- ESP32 development board (with WiFi)
 - RGB LED (common cathode)
 - 3x 220Ω resistors (one for each LED color)
 - Breadboard and jumper wires
-- USB cable (for both programming and operation)
+- USB cable (for programming only)
+- USB power adapter or power bank (for standalone operation)
 
 ## Wiring Diagram
 
@@ -26,7 +27,7 @@ If you're using a common anode RGB LED, connect the common pin to 3.3V instead o
 
 ## Software Requirements
 
-### 1. Arduino IDE Setup
+### Arduino IDE Setup
 
 1. Install [Arduino IDE](https://www.arduino.cc/en/software)
 2. Add ESP32 board support:
@@ -38,89 +39,69 @@ If you're using a common anode RGB LED, connect the common pin to 3.3V instead o
    - Go to Tools > Board > Boards Manager
    - Search for "esp32" and install "esp32 by Espressif Systems"
 
-### 2. Arduino Libraries
+### Arduino Libraries
 
 Install via Library Manager (Sketch > Include Library > Manage Libraries):
 - **ArduinoJson** by Benoit Blanchon (version 7.x)
 
-### 3. Node.js or Python (Choose One)
-
-#### Option A: Node.js (Recommended)
-
-Install [Node.js](https://nodejs.org/) (version 14 or newer), then install required packages:
-
-```bash
-npm install
-```
-
-#### Option B: Python
-
-Install Python 3.7 or newer, then install required packages:
-
-```bash
-pip install pyserial requests
-```
-
 ## Installation
 
-### Step 1: Upload to ESP32
+### Step 1: Configure WiFi
+
+1. Open [config.h](config.h) in a text editor or Arduino IDE
+2. Update your WiFi credentials:
+   ```cpp
+   #define WIFI_SSID "YOUR_WIFI_NAME"        // Replace with your WiFi network name
+   #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD" // Replace with your WiFi password
+   ```
+3. Adjust LED pin numbers if needed (default: R=25, G=26, B=27)
+4. Adjust check interval if desired (default: 60 seconds)
+
+### Step 2: Upload to ESP32
 
 1. Open [moonlamp.ino](moonlamp.ino) in Arduino IDE
-2. Edit [config.h](config.h) to adjust pin numbers if needed (default: R=25, G=26, B=27)
-3. Select your ESP32 board:
+2. Select your ESP32 board:
    - Tools > Board > ESP32 Arduino > ESP32 Dev Module (or your specific board)
-4. Select the correct COM port:
+3. Select the correct COM port:
    - Tools > Port > (select your ESP32's port, e.g., COM3)
-5. Click Upload
-6. Note which COM port you used
+4. Click Upload
+5. Open Serial Monitor (Tools > Serial Monitor) to see status messages
+   - Set baud rate to 115200
 
-### Step 2: Run the Tracker Script
+### Step 3: Wire the Circuit
 
-1. Close Arduino IDE Serial Monitor (if open)
-2. Choose Node.js OR Python:
+Connect your RGB LED to the ESP32:
+```
+ESP32          RGB LED
+GPIO 25  ---[220Ω]---  Red Pin
+GPIO 26  ---[220Ω]---  Green Pin
+GPIO 27  ---[220Ω]---  Blue Pin
+GND      -------------  Common Cathode (-)
+```
 
-#### Option A: Node.js
+### Step 4: Power On
 
-1. Install dependencies (first time only):
-   ```bash
-   npm install
-   ```
-2. Edit [eth_tracker.js](eth_tracker.js) and update the COM port on line 5:
-   ```javascript
-   const SERIAL_PORT = 'COM3';  // Change to match your ESP32's port
-   ```
-3. Run the script:
-   ```bash
-   npm start
-   ```
-   Or:
-   ```bash
-   node eth_tracker.js
-   ```
-
-#### Option B: Python
-
-1. Edit [eth_tracker.py](eth_tracker.py) and update the COM port:
-   ```python
-   SERIAL_PORT = 'COM3'  # Change to match your ESP32's port
-   ```
-2. Run the script:
-   ```bash
-   python eth_tracker.py
-   ```
+1. Disconnect from computer (optional)
+2. Connect ESP32 to USB power adapter or power bank
+3. The lamp will:
+   - Show **blue** while connecting to WiFi
+   - Flash **green** 3 times when WiFi connected
+   - Flash **red** continuously if WiFi connection fails
+   - Start tracking ETH prices automatically!
 
 ## How It Works
 
-1. **Node.js/Python script on your laptop**:
-   - Fetches current Ethereum price from CoinGecko API every 60 seconds
-   - Stores price history for comparison
-   - Compares current price to 5 minutes ago
-   - Sends status to ESP32 via USB serial
+1. **ESP32 connects to your WiFi** network on startup
+2. **Fetches ETH price** from CoinGecko API every 60 seconds
+3. **Stores price history** in memory for comparison
+4. **Compares current price** to 5 minutes ago
+5. **Updates LED color** based on price movement:
+   - Green = Price UP
+   - Red = Price DOWN
+   - White = No change
+   - Blue = Building price history
 
-2. **ESP32**:
-   - Receives price data over serial
-   - Updates LED color based on price movement
-   - Displays status information back to laptop
+Everything runs on the ESP32 - no computer needed!
 
 ## LED Color Meanings
 
@@ -132,25 +113,17 @@ pip install pyserial requests
 
 ## Configuration
 
-### ESP32 Settings
-
-Edit [config.h](config.h):
+Edit [config.h](config.h) to customize:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
+| `WIFI_SSID` | YOUR_WIFI_NAME | Your WiFi network name |
+| `WIFI_PASSWORD` | YOUR_WIFI_PASSWORD | Your WiFi password |
 | `RED_PIN` | 25 | GPIO pin for red LED |
 | `GREEN_PIN` | 26 | GPIO pin for green LED |
 | `BLUE_PIN` | 27 | GPIO pin for blue LED |
 | `LED_BRIGHTNESS` | 255 | LED brightness (0-255) |
-
-### Tracker Script Settings
-
-Edit [eth_tracker.js](eth_tracker.js) (Node.js) or [eth_tracker.py](eth_tracker.py) (Python):
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `SERIAL_PORT` | COM3 | ESP32's COM port (Windows: COM3, Linux/Mac: /dev/ttyUSB0) |
-| `CHECK_INTERVAL` | 60 | Price check interval in seconds |
+| `CHECK_INTERVAL` | 60000 | Price check interval in milliseconds |
 | `PRICE_HISTORY_MINUTES` | 5 | Compare to price from X minutes ago |
 
 ## Troubleshooting
@@ -161,49 +134,56 @@ Edit [eth_tracker.js](eth_tracker.js) (Node.js) or [eth_tracker.py](eth_tracker.
 - Make sure you're using appropriate resistors (220Ω recommended)
 - Check if you have common cathode or common anode RGB LED
 
-### Script can't connect to ESP32
-- Make sure ESP32 is connected via USB
-- Close Arduino IDE Serial Monitor if it's open (only one program can use the serial port)
-- Check the COM port in Device Manager (Windows) or `ls /dev/tty*` (Mac/Linux)
-- Update `SERIAL_PORT` in [eth_tracker.js](eth_tracker.js) or [eth_tracker.py](eth_tracker.py) to match your ESP32's port
-- Try unplugging and replugging the USB cable
+### LED flashes red continuously
+This means WiFi connection failed:
+- Check WiFi credentials in [config.h](config.h) are correct
+- Make sure your WiFi network is 2.4GHz (ESP32 doesn't support 5GHz)
+- Check if your WiFi is working
+- Open Serial Monitor (115200 baud) to see detailed error messages
 
-### "Module not found" or dependency errors
-
-**Node.js:**
-```bash
-npm install
-```
-
-**Python:**
-```bash
-pip install pyserial requests
-```
+### Price not updating
+- Check Serial Monitor for error messages
+- Verify internet connection is working
+- CoinGecko API might be temporarily down - wait a few minutes
+- Check if firewall is blocking the ESP32
 
 ### Upload fails
 - Make sure you selected the correct board and port in Arduino IDE
 - Try pressing the BOOT button on ESP32 while uploading
 - Check USB cable supports data transfer (not just charging)
 
+### "Brownout detector was triggered" error
+- Your power supply may be insufficient
+- Try a different USB power adapter (2A recommended)
+- Some ESP32 boards are more sensitive to power issues
+
 ## Example Output
 
-When running the tracker script ([eth_tracker.js](eth_tracker.js) or [eth_tracker.py](eth_tracker.py)), you'll see:
+Open Serial Monitor (115200 baud) to see:
 
 ```
-=== Ethereum MoonLamp Tracker ===
-Connecting to ESP32 on COM3...
-Connected to ESP32!
+=== Ethereum MoonLamp (WiFi Mode) ===
+Connecting to WiFi: YourWiFiName
+...
+WiFi Connected!
+IP Address: 192.168.1.100
 
-[19:45:30] Current ETH Price: $2,456.78
-Status: 🔵 BLUE - Building price history...
+Fetching ETH price from CoinGecko...
+Current ETH Price: $2456.78
+Building price history...
+Status: BLUE (Building history)
 
-[19:46:30] Current ETH Price: $2,458.12
-Price 5 min ago: $2,450.00
-Status: 🟢 GREEN - UP 0.33%
+Fetching ETH price from CoinGecko...
+Current ETH Price: $2458.12
+Price 5 min ago: $2450.00
+Change: 0.33%
+Status: GREEN (UP)
 
-[19:47:30] Current ETH Price: $2,454.50
-Price 5 min ago: $2,456.78
-Status: 🔴 RED - DOWN -0.09%
+Fetching ETH price from CoinGecko...
+Current ETH Price: $2454.50
+Price 5 min ago: $2456.78
+Change: -0.09%
+Status: RED (DOWN)
 ```
 
 ## API Information
@@ -213,54 +193,25 @@ Uses the free CoinGecko API (no API key required):
 - Rate limit: ~10-50 calls/minute (free tier)
 - No authentication needed
 
-## Running Automatically
+## Power Options
 
-### Windows
-
-**Node.js:**
-```batch
-@echo off
-cd C:\miniapps\moonlamp
-npm start
-pause
-```
-
-**Python:**
-```batch
-@echo off
-cd C:\miniapps\moonlamp
-python eth_tracker.py
-pause
-```
-
-### Mac/Linux
-
-**Node.js:**
-```bash
-#!/bin/bash
-cd ~/miniapps/moonlamp
-npm start
-```
-
-**Python:**
-```bash
-#!/bin/bash
-cd ~/miniapps/moonlamp
-python3 eth_tracker.py
-```
-
-Make it executable: `chmod +x run_moonlamp.sh`
+The ESP32 can be powered by:
+- **USB wall adapter** (most common, 5V 2A recommended)
+- **Power bank** (for portable operation)
+- **USB port on computer** (works but less convenient)
+- **Battery pack** with voltage regulator (for truly wireless operation)
 
 ## Future Enhancements
 
 Ideas for expansion:
-- WiFi mode for standalone operation (no laptop needed)
-- Support multiple cryptocurrencies
+- Support multiple cryptocurrencies (Bitcoin, Solana, etc.)
 - Add OLED display for price info
-- Web interface for remote monitoring
-- Smooth color transitions
+- Web interface for configuration and monitoring
+- Smooth color transitions between states
 - Configurable thresholds for color changes
 - Sound alerts for major price movements
+- Historical price graph on web dashboard
+- OTA (Over-The-Air) firmware updates
 
 ## License
 
@@ -272,5 +223,5 @@ Built for tracking Ethereum to the moon! 🚀
 
 Uses:
 - CoinGecko API for price data
-- Python for data fetching
-- ESP32 for LED control
+- ESP32 WiFi for standalone operation
+- ArduinoJson for data parsing
